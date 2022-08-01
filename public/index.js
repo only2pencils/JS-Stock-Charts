@@ -30,7 +30,86 @@ async function main() {
     "https://api.twelvedata.com/time_series?symbol=GME,MSFT,DIS,BNTX&interval=1day&apikey=7a9b3316aebd40fd9d505848fac645b8"
   );
 
-  const result = await response.json;
+  const result = await response.json();
+
+  const { GME, MSFT, DIS, BNTX } = result;
+
+  const stocks = [GME, MSFT, DIS, BNTX];
+
+  stocks.forEach((stock) => stock.values.reverse());
+
+  //Time Chart
+  new Chart(timeChartCanvas.getContext("2d"), {
+    // type: 'bar',
+    type: "line",
+    data: {
+      // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      labels: stocks[0].values.map((value) => value.datetime),
+      // datesets: [{
+      datasets: stocks.map((stock) => ({
+        // label: '# of Votes',
+        label: stock.meta.symbol,
+        // data: [12, 19, 3, 5, 2, 3],
+        data: stock.values.map((value) => parseFloat(value.high)),
+        // backgroundColor:  'rgba (255, 99, 132, 0.2)',
+        backgroundColor: getColor(stock.meta.symbol),
+        // borderColor:  'rgba (255, 99, 132, 1)',
+        borderColor: getColor(stock.meta.symbol),
+        data: stock.values.map((value) => parseFloat(value.high)),
+      })),
+    },
+  });
+
+  // High Chart
+  new Chart(highestPriceChartCanvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: stocks.map((stock) => stock.meta.symbol),
+      datasets: [
+        {
+          // label:'Average',
+          label: "Highest",
+          backgroundColor: stocks.map((stock) => getColor(stock.meta.symbol)),
+          borderColor: stocks.map((stock) => getColor(stock.meta.symbol)),
+          data: stocks.map((stock) => findHighest(stock.values)),
+        },
+      ],
+    },
+  });
+
+  // Average Chart
+  new Chart(averagePriceChartCanvas.getContext("2d"), {
+    type: "pie",
+    data: {
+      labels: stocks.map((stock) => stock.meta.symbol),
+      datasets: [
+        {
+          label: "Average",
+          backgroundColor: stocks.map((stock) => getColor(stock.meta.symbol)),
+          borderColor: stocks.map((stock) => getColor(stock.meta.symbol)),
+          data: stocks.map((stock) => calculateAverage(stock.values)),
+        },
+      ],
+    },
+  });
+}
+
+function findHighest(values) {
+  let highest = 0;
+  values.forEach((value) => {
+    if (parseFloat(value.high) > highest) {
+      highest = value.high;
+    }
+  });
+  return highest;
+}
+
+function calculateAverage(values) {
+  let total = 0;
+  values.forEach((value) => {
+    total += parseFloat(value.high);
+  });
+  return total / values.length;
 }
 
 main();
